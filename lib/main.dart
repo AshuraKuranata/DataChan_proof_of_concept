@@ -1,4 +1,11 @@
-/* Main Build */
+// Main entry point for the DataChan Proof of Concept application.
+//
+// This application demonstrates a Flutter-based camera and gallery system with
+// image storage capabilities. It provides:
+// - Camera functionality to capture images
+// - Local storage management with 25MB limit
+// - Gallery view to display saved images
+// - QR/Barcode scanning and OCR capabilities (placeholder)
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -6,27 +13,33 @@ import 'package:proof_of_concept_v1/views/homepage.dart';
 import 'package:proof_of_concept_v1/views/cameraview.dart';
 import 'package:proof_of_concept_v1/views/gallery.dart';
 
+/// Global list of available cameras on the device.
+/// Initialized during app startup to ensure camera availability.
 late List<CameraDescription> cameras;
 
+/// Application entry point.
+///
+/// Initializes Flutter bindings and retrieves available cameras before
+/// launching the app. This ensures the camera is ready when needed.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   cameras = await availableCameras();
   runApp(const MyApp());
 }
 
-
+/// Root widget of the application.
+///
+/// Configures the MaterialApp with theme and home page.
+/// Uses a deep purple color scheme for the application theme.
 class MyApp extends StatelessWidget {
-
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
-
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'DataChan Proof of Concept',
       theme: ThemeData(
-
+        // Apply a deep purple color scheme throughout the app
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       home: const MyHomePage(title: 'DataChan Proof of Concept'),
@@ -34,6 +47,10 @@ class MyApp extends StatelessWidget {
   }
 }
 
+/// Main home page widget that manages navigation between different views.
+///
+/// This is a stateful widget that maintains the selected navigation index
+/// and displays the appropriate view based on user selection.
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
@@ -43,7 +60,14 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+/// State for MyHomePage.
+///
+/// Manages the navigation rail and displays different views:
+/// - Home: Welcome screen with quick actions
+/// - Camera: Camera view for capturing images
+/// - Gallery: Gallery view for viewing saved images
 class _MyHomePageState extends State<MyHomePage> {
+  /// Currently selected navigation index (0=Home, 1=Camera, 2=Gallery)
   int _selectedIndex = 0;
 
   @override
@@ -55,6 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Row(
         children: [
+          // Left navigation rail with three destinations
           SafeArea(
             child: NavigationRail(
               extended: false,
@@ -80,6 +105,7 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
           ),
+          // Main content area that displays the selected view
           Expanded(
             child: Container(
               color: Theme.of(context).colorScheme.primaryContainer,
@@ -91,6 +117,12 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  /// Build the appropriate view based on the selected index.
+  ///
+  /// Returns:
+  /// - HomePage for index 0
+  /// - CameraView for index 1
+  /// - GalleryView for index 2
   Widget _buildView(int index) {
     switch (index) {
       case 0:
