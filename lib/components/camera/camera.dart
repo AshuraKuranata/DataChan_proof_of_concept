@@ -1,3 +1,8 @@
+// This is the working component of the camera
+
+// To do - create a views page that is able to port this component and functionality into a page view
+
+
 import 'dart:async';
 import 'dart:io';
 
@@ -109,7 +114,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
             );
           } catch (e) {
             // If an error occurs, log the error to the console.
-            print(e);
+            debugPrint('Error taking picture: $e');
           }
         },
         child: const Icon(Icons.camera_alt),
