@@ -17,7 +17,7 @@ class VisionResultsComponent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vision Results'),
+        title: const Text('Scan Results'),
         actions: [
           if (onClose != null)
             IconButton(

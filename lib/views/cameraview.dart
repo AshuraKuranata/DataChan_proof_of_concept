@@ -5,14 +5,15 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:proof_of_concept_v1/services/image_storage_service.dart';
 import 'package:proof_of_concept_v1/services/vision_service.dart';
+import 'package:proof_of_concept_v1/services/scan_data_storage_service.dart';
 import 'package:proof_of_concept_v1/components/vision/vision_results_component.dart';
 
-/// Camera view widget that allows users to capture images.
-///
-/// Displays a live camera preview and provides functionality to:
-/// - Take pictures
-/// - Save images to local storage
-/// - Scan for QR/Barcodes and perform OCR
+// Camera view widget that allows users to capture images.
+//
+// Displays a live camera preview and provides functionality to:
+// - Take pictures
+// - Save images to local storage
+// - Scan for QR/Barcodes and perform OCR
 class CameraView extends StatefulWidget {
   const CameraView({super.key, required this.camera});
 
@@ -22,15 +23,15 @@ class CameraView extends StatefulWidget {
   CameraViewState createState() => CameraViewState();
 }
 
-/// State for CameraView.
-///
-/// Manages the camera controller and handles image capture.
-/// Initializes the camera on startup and properly disposes of resources.
+// State for CameraView.
+//
+// Manages the camera controller and handles image capture.
+// Initializes the camera on startup and properly disposes of resources.
 class CameraViewState extends State<CameraView> {
-  /// Controller for managing camera operations
+  // Controller for managing camera operations
   late CameraController _controller;
 
-  /// Future that completes when the camera is initialized
+  // Future that completes when the camera is initialized
   late Future<void> _initializeControllerFuture;
 
   @override
@@ -77,7 +78,7 @@ class CameraViewState extends State<CameraView> {
     );
   }
 
-  /// Capture an image from the camera and navigate to the display screen
+  // Capture an image from the camera and navigate to the display screen
   Future<void> _takePicture() async {
     try {
       // Ensure the camera is initialized before taking a picture
@@ -102,12 +103,12 @@ class CameraViewState extends State<CameraView> {
   }
 }
 
-/// Widget that displays a captured image and provides options to save or scan it.
-///
-/// Allows users to:
-/// - View the captured image in full screen
-/// - Save the image to local storage
-/// - Scan the image for QR/Barcodes and perform OCR
+// Widget that displays a captured image and provides options to save or scan it.
+//
+// Allows users to:
+// - View the captured image in full screen
+// - Save the image to local storage
+// - Scan the image for QR/Barcodes and perform OCR
 class DisplayPictureScreen extends StatefulWidget {
   final String imagePath;
 
@@ -117,14 +118,14 @@ class DisplayPictureScreen extends StatefulWidget {
   State<DisplayPictureScreen> createState() => _DisplayPictureScreenState();
 }
 
-/// State for DisplayPictureScreen.
-///
-/// Manages the image display and handles save/scan operations.
+// State for DisplayPictureScreen.
+//
+// Manages the image display and handles save/scan operations.
 class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
-  /// Flag indicating if the image is being saved
+  // Flag indicating if the image is being saved
   bool _isSaving = false;
 
-  /// Flag indicating if the image is being scanned
+  // Flag indicating if the image is being scanned
   bool _isScanning = false;
 
   @override
@@ -157,10 +158,10 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
     );
   }
 
-  /// Save the image to local storage using ImageStorageService.
-  ///
-  /// Shows a success message and navigates back if successful,
-  /// or shows an error message if the save fails (e.g., storage limit exceeded).
+  // Save the image to local storage using ImageStorageService.
+  //
+  // Shows a success message and navigates back if successful,
+  // or shows an error message if the save fails (e.g., storage limit exceeded).
   Future<void> _saveImage() async {
     setState(() {
       _isSaving = true;
@@ -197,10 +198,15 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
     }
   }
 
-  /// Scan the image for QR/Barcodes and perform OCR.
-  ///
-  /// Uses VisionService to detect barcodes and extract text from the image.
-  /// Navigates to VisionResultsComponent to display the results.
+  // Scan the image for QR/Barcodes and perform OCR.
+  //
+  // Uses VisionService to detect barcodes and extract text from the image.
+  // Saves the scan results to local storage and navigates to VisionResultsComponent.
+  //
+  // For Developer Review:
+  // - Scans image using VisionService
+  // - Saves results to ScanDataStorageService
+  // - Displays results in VisionResultsComponent
   Future<void> _scanImage() async {
     setState(() {
       _isScanning = true;
@@ -211,6 +217,17 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
       final result = await VisionService.scanImage(widget.imagePath);
 
       if (!context.mounted) return;
+
+      // Save scan results to local storage
+      final scanData = ScanData(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        imagePath: widget.imagePath,
+        barcodes: result.barcodes.map((b) => b.value).toList(),
+        ocrText: result.text,
+        timestamp: DateTime.now(),
+      );
+
+      await ScanDataStorageService.saveScanResult(scanData);
 
       setState(() {
         _isScanning = false;

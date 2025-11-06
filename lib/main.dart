@@ -12,25 +12,26 @@ import 'package:flutter/material.dart';
 import 'package:proof_of_concept_v1/views/homepage.dart';
 import 'package:proof_of_concept_v1/views/cameraview.dart';
 import 'package:proof_of_concept_v1/views/gallery.dart';
+import 'package:proof_of_concept_v1/views/scanlist.dart';
 
-/// Global list of available cameras on the device.
-/// Initialized during app startup to ensure camera availability.
+// Global list of available cameras on the device.
+// Initialized during app startup to ensure camera availability.
 late List<CameraDescription> cameras;
 
-/// Application entry point.
-///
-/// Initializes Flutter bindings and retrieves available cameras before
-/// launching the app. This ensures the camera is ready when needed.
+// Application entry point.
+//
+// Initializes Flutter bindings and retrieves available cameras before
+// launching the app. This ensures the camera is ready when needed.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   cameras = await availableCameras();
   runApp(const MyApp());
 }
 
-/// Root widget of the application.
-///
-/// Configures the MaterialApp with theme and home page.
-/// Uses a deep purple color scheme for the application theme.
+// Root widget of the application.
+//
+// Configures the MaterialApp with theme and home page.
+// Uses a deep purple color scheme for the application theme.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -47,10 +48,10 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// Main home page widget that manages navigation between different views.
-///
-/// This is a stateful widget that maintains the selected navigation index
-/// and displays the appropriate view based on user selection.
+// Main home page widget that manages navigation between different views.
+//
+// This is a stateful widget that maintains the selected navigation index
+// and displays the appropriate view based on user selection.
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
@@ -60,14 +61,15 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-/// State for MyHomePage.
-///
-/// Manages the navigation rail and displays different views:
-/// - Home: Welcome screen with quick actions
-/// - Camera: Camera view for capturing images
-/// - Gallery: Gallery view for viewing saved images
+// State for MyHomePage.
+//
+// Manages the navigation rail and displays different views:
+// - Home: Welcome screen with quick actions
+// - Camera: Camera view for capturing images
+// - Gallery: Gallery view for viewing saved images
+// - Scan List: View of all saved barcode/OCR scan results
 class _MyHomePageState extends State<MyHomePage> {
-  /// Currently selected navigation index (0=Home, 1=Camera, 2=Gallery)
+  // Currently selected navigation index (0=Home, 1=Camera, 2=Gallery, 3=ScanList)
   int _selectedIndex = 0;
 
   @override
@@ -79,7 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Row(
         children: [
-          // Left navigation rail with three destinations
+          // Left navigation rail with four destinations
           SafeArea(
             child: NavigationRail(
               extended: false,
@@ -95,6 +97,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 NavigationRailDestination(
                   icon: Icon(Icons.image),
                   label: Text("Gallery"),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.qr_code_scanner),
+                  label: Text("Scans"),
                 ),
               ],
               selectedIndex: _selectedIndex,
@@ -117,12 +123,13 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  /// Build the appropriate view based on the selected index.
-  ///
-  /// Returns:
-  /// - HomePage for index 0
-  /// - CameraView for index 1
-  /// - GalleryView for index 2
+  // Build the appropriate view based on the selected index.
+  //
+  // Returns:
+  // - HomePage for index 0
+  // - CameraView for index 1
+  // - GalleryView for index 2
+  // - ScanListView for index 3
   Widget _buildView(int index) {
     switch (index) {
       case 0:
@@ -131,6 +138,8 @@ class _MyHomePageState extends State<MyHomePage> {
         return CameraView(camera: cameras.first);
       case 2:
         return const GalleryView();
+      case 3:
+        return const ScanListView();
       default:
         return const HomePage();
     }
