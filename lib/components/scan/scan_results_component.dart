@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:proof_of_concept_v1/services/vision_service.dart';
+import 'package:proof_of_concept_v1/services/scan_service.dart';
 
-/// Component for displaying QR/Barcode scanning and OCR results.
-/// Shows detected barcodes and extracted text from images.
-class VisionResultsComponent extends StatelessWidget {
-  final VisionResult result;
+// Component for displaying barcode scanning and OCR results.
+// Shows detected barcodes and extracted text from images.
+class ScanResultsComponent extends StatelessWidget {
+  final ScanResult result;
   final VoidCallback? onClose;
 
-  const VisionResultsComponent({
+  const ScanResultsComponent({
     super.key,
     required this.result,
     this.onClose,
