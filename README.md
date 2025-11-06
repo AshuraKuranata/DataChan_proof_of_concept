@@ -20,6 +20,23 @@ Utilizing Flutter <https://docs.flutter.dev/> for project development.  First it
 
 Utilization of Augment Code AI for assistance in build development.
 
+## 11/6/2025
+Feature updates:
+
+✅ Task 1: Set up ML Kit Libraries for scan/OCR components specific to UPC & EAN barcodes
+Completed Actions:
+Implemented actual OCR using Google ML Kit Text Recognition (google_ml_kit package (v0.20.0)); google_mlkit_barcode_scanning (v0.14.1); google_mlkit_text_recognition (v0.15.0)
+Updated ScanService to use Google ML Kit
+
+Configured barcode scanner to support multiple formats:
+UPC-A, UPC-E (primary focus)
+EAN-13, EAN-8 (primary focus)
+Code 128, Code 39, Code 93, Codabar, ITF, QR Code, PDF417, Aztec, Data Matrix
+
+Added helper method _getBarcodeFormatName() to convert ML Kit formats to readable strings
+✅ Task 2: Remove mock data protocols out of code program
+✅ Task 3: Rename and update components with "vision_service" or affiliated to "vision" to "scan_service" or "scan" for consistency
+
 ## 11/2/2025
 
 🔧 Key Features Implemented

@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:proof_of_concept_v1/services/image_storage_service.dart';
-import 'package:proof_of_concept_v1/services/vision_service.dart';
+import 'package:proof_of_concept_v1/services/scan_service.dart';
 import 'package:proof_of_concept_v1/services/scan_data_storage_service.dart';
-import 'package:proof_of_concept_v1/components/vision/vision_results_component.dart';
+import 'package:proof_of_concept_v1/components/scan/scan_results_component.dart';
 
 // Camera view widget that allows users to capture images.
 //
@@ -198,15 +198,15 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
     }
   }
 
-  // Scan the image for QR/Barcodes and perform OCR.
+  // Scan the image for barcodes and perform OCR.
   //
-  // Uses VisionService to detect barcodes and extract text from the image.
-  // Saves the scan results to local storage and navigates to VisionResultsComponent.
+  // Uses ScanService to detect barcodes and extract text from the image.
+  // Saves the scan results to local storage and navigates to ScanResultsComponent.
   //
   // For Developer Review:
-  // - Scans image using VisionService
+  // - Scans image using ScanService
   // - Saves results to ScanDataStorageService
-  // - Displays results in VisionResultsComponent
+  // - Displays results in ScanResultsComponent
   Future<void> _scanImage() async {
     setState(() {
       _isScanning = true;
@@ -214,7 +214,7 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
 
     try {
       // Scan the image for barcodes and text
-      final result = await VisionService.scanImage(widget.imagePath);
+      final result = await ScanService.scanImage(widget.imagePath);
 
       if (!context.mounted) return;
 
@@ -236,7 +236,7 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
       // Navigate to results screen to display scan results
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => VisionResultsComponent(
+          builder: (context) => ScanResultsComponent(
             result: result,
             onClose: () => Navigator.pop(context),
           ),
