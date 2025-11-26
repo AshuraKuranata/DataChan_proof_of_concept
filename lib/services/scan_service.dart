@@ -14,7 +14,6 @@ class ScanService {
   // Scan an image for barcodes and QR codes
   // Returns a list of detected barcodes with their values
   //
-  // For Developer Review:
   // - Uses Google ML Kit for actual barcode scanning
   // - Supports UPC-A, UPC-E, EAN-13, EAN-8, Code 128, Code 39, Code 93, Codabar, ITF, and QR codes
   static Future<List<BarcodeResult>> scanBarcodes(String imagePath) async {
@@ -109,7 +108,6 @@ class ScanService {
   // Perform OCR (Optical Character Recognition) on an image
   // Returns extracted text from the image
   //
-  // For Developer Review:
   // - Uses Google ML Kit Text Recognition for actual OCR
   // - Extracts all text from the image
   static Future<String> performOCR(String imagePath) async {
@@ -174,6 +172,109 @@ class ScanService {
       return ScanResult(barcodes: [], text: '');
     }
   }
+
+  // Recognize store type from image (Safeway/Albertsons or Costco)
+  // For Developer Review:
+  // - Analyzes image to identify store tags/labels
+  // - Uses OCR to detect store-specific text patterns
+  // - Returns "Safeway/Albertsons", "Costco", or null if unable to determine
+  // - This is a placeholder implementation that uses OCR text analysis
+  // - In production, this could use image classification ML models
+  static Future<String?> recognizeStoreType(String imagePath) async {
+    try {
+      debugPrint('Recognizing store type from: $imagePath');
+
+      final file = File(imagePath);
+      if (!await file.exists()) {
+        debugPrint('Image file does not exist: $imagePath');
+        return null;
+      }
+
+      // Perform OCR to extract text from image
+      final extractedText = await performOCR(imagePath);
+
+      // Analyze text for store-specific keywords
+      final lowerText = extractedText.toLowerCase();
+
+      // Check for Costco indicators
+      if (lowerText.contains('costco') ||
+          lowerText.contains('warehouse') ||
+          lowerText.contains('member')) {
+        debugPrint('Detected Costco store type');
+        return 'Costco';
+      }
+
+      // Check for Safeway/Albertsons indicators
+      if (lowerText.contains('safeway') ||
+          lowerText.contains('albertsons') ||
+          lowerText.contains('albertson')) {
+        debugPrint('Detected Safeway/Albertsons store type');
+        return 'Safeway/Albertsons';
+      }
+
+      // If no specific store indicators found, return null
+      debugPrint('Unable to determine store type from image');
+      return null;
+    } catch (e) {
+      debugPrint('Error recognizing store type: $e');
+      return null;
+    }
+  }
+
+  // Extract product information from OCR text
+  // For Developer Review:
+  // - Extracts product name from the first line of OCR text
+  // - Attempts to extract price and unit price from OCR text
+  // - Looks for common price patterns like "$X.XX" or "X.XX"
+  // - Returns ProductInfo with extracted data
+  static Future<ProductInfo> extractProductInfo(String ocrText) async {
+    try {
+      debugPrint('Extracting product information from OCR text');
+
+      final lines = ocrText.split('\n');
+      String? productName;
+      double? price;
+      double? unitPrice;
+
+      // Extract product name from first non-empty line
+      for (var line in lines) {
+        if (line.trim().isNotEmpty) {
+          productName = line.trim();
+          break;
+        }
+      }
+
+      // Extract prices from OCR text using regex patterns
+      final pricePattern = RegExp(r'\$?\s*(\d+\.\d{2}|\d+)');
+      final matches = pricePattern.allMatches(ocrText);
+
+      if (matches.isNotEmpty) {
+        // First price found is typically the total price
+        final firstMatch = matches.first.group(1);
+        if (firstMatch != null) {
+          price = double.tryParse(firstMatch);
+        }
+
+        // If there are multiple prices, second one might be unit price
+        if (matches.length > 1) {
+          final secondMatch = matches.elementAt(1).group(1);
+          if (secondMatch != null) {
+            unitPrice = double.tryParse(secondMatch);
+          }
+        }
+      }
+
+      debugPrint('Extracted product info: name=$productName, price=$price, unitPrice=$unitPrice');
+      return ProductInfo(
+        productName: productName,
+        price: price,
+        unitPrice: unitPrice,
+      );
+    } catch (e) {
+      debugPrint('Error extracting product information: $e');
+      return ProductInfo(productName: null, price: null, unitPrice: null);
+    }
+  }
 }
 
 // Result model for barcode scanning
@@ -209,5 +310,21 @@ class ScanResult {
   @override
   String toString() =>
       'Scan Result(barcodes: ${barcodes.length}, text length: ${text.length})';
+}
+
+// Product information extracted from OCR text
+class ProductInfo {
+  final String? productName;
+  final double? price;
+  final double? unitPrice;
+
+  ProductInfo({
+    required this.productName,
+    required this.price,
+    required this.unitPrice,
+  });
+
+  @override
+  String toString() => 'ProductInfo(name: $productName, price: $price, unitPrice: $unitPrice)';
 }
 

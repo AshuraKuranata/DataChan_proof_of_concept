@@ -204,8 +204,9 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
   // Saves the scan results to local storage and navigates to ScanResultsComponent.
   //
   // For Developer Review:
-  // - Scans image using ScanService
-  // - Saves results to ScanDataStorageService
+  // - Scans image using ScanService for barcodes and OCR
+  // - Recognizes store type (Safeway/Albertsons or Costco) using ScanService
+  // - Saves results to ScanDataStorageService with store type
   // - Displays results in ScanResultsComponent
   Future<void> _scanImage() async {
     setState(() {
@@ -216,15 +217,25 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
       // Scan the image for barcodes and text
       final result = await ScanService.scanImage(widget.imagePath);
 
+      // Recognize store type from image
+      final storeType = await ScanService.recognizeStoreType(widget.imagePath);
+
+      // Extract product information from OCR text
+      final productInfo = await ScanService.extractProductInfo(result.text);
+
       if (!context.mounted) return;
 
-      // Save scan results to local storage
+      // Save scan results to local storage with store type and product info
       final scanData = ScanData(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         imagePath: widget.imagePath,
         barcodes: result.barcodes.map((b) => b.value).toList(),
         ocrText: result.text,
         timestamp: DateTime.now(),
+        storeType: storeType,
+        price: productInfo.price,
+        unitPrice: productInfo.unitPrice,
+        productName: productInfo.productName,
       );
 
       await ScanDataStorageService.saveScanResult(scanData);

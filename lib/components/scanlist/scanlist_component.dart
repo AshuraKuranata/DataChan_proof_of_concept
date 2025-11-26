@@ -61,7 +61,16 @@ class _ScanListComponentState extends State<ScanListComponent> {
   }
 
   // Show details of a scan
+  // For Developer Review:
+  // - Displays all scan information including product name, store type, price, and unit price
+  // - Formats date as mm/dd/yyyy
+  // - Shows optional pricing information when available
   void _showScanDetails(ScanData scan) {
+    // Format date as mm/dd/yyyy
+    final formattedDate = '${scan.timestamp.month.toString().padLeft(2, '0')}/'
+        '${scan.timestamp.day.toString().padLeft(2, '0')}/'
+        '${scan.timestamp.year}';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -71,14 +80,36 @@ class _ScanListComponentState extends State<ScanListComponent> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Date: ${scan.timestamp.toString().split('.')[0]}'),
+              if (scan.productName != null) ...[
+                Text('Product: ${scan.productName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 12),
+              ],
+              Text('Date: $formattedDate', style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
+              if (scan.storeType != null) ...[
+                Text('Store: ${scan.storeType}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+              ],
               if (scan.barcodes.isNotEmpty) ...[
                 const Text('Barcodes:', style: TextStyle(fontWeight: FontWeight.bold)),
                 ...scan.barcodes.map((barcode) => Padding(
                   padding: const EdgeInsets.only(left: 8.0, top: 4.0),
                   child: Text('• $barcode'),
                 )),
+                const SizedBox(height: 12),
+              ],
+              if (scan.price != null || scan.unitPrice != null) ...[
+                const Text('Pricing:', style: TextStyle(fontWeight: FontWeight.bold)),
+                if (scan.price != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0, top: 4.0),
+                    child: Text('Price: \$${scan.price!.toStringAsFixed(2)}'),
+                  ),
+                if (scan.unitPrice != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0, top: 4.0),
+                    child: Text('Unit Price: \$${scan.unitPrice!.toStringAsFixed(2)}'),
+                  ),
                 const SizedBox(height: 12),
               ],
               if (scan.ocrText.isNotEmpty) ...[
@@ -189,6 +220,11 @@ class ScanListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Format date as mm/dd/yyyy
+    final formattedDate = '${scan.timestamp.month.toString().padLeft(2, '0')}/'
+        '${scan.timestamp.day.toString().padLeft(2, '0')}/'
+        '${scan.timestamp.year}';
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
@@ -196,26 +232,61 @@ class ScanListTile extends StatelessWidget {
           scan.barcodes.isNotEmpty ? Icons.qr_code : Icons.text_fields,
           color: Theme.of(context).colorScheme.primary,
         ),
-        title: Text(
-          scan.barcodes.isNotEmpty
-              ? 'Barcode: ${scan.barcodes.first}'
-              : 'OCR Scan',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (scan.productName != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4.0),
+                child: Text(
+                  'Product: ${scan.productName}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            Text(
+              scan.barcodes.isNotEmpty
+                  ? 'Barcode: ${scan.barcodes.first}'
+                  : 'OCR Scan',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (scan.storeType != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  'Store: ${scan.storeType}',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                ),
+              ),
+          ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              scan.timestamp.toString().split('.')[0],
+              'Date: $formattedDate',
               style: const TextStyle(fontSize: 12),
             ),
+            if (scan.price != null || scan.unitPrice != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  'Price: ${scan.price != null ? '\$${scan.price!.toStringAsFixed(2)}' : 'N/A'} | '
+                  'Unit: ${scan.unitPrice != null ? '\$${scan.unitPrice!.toStringAsFixed(2)}' : 'N/A'}',
+                  style: const TextStyle(fontSize: 11),
+                ),
+              ),
             if (scan.ocrText.isNotEmpty)
-              Text(
-                scan.ocrText.split('\n').first,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12),
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  scan.ocrText.split('\n').first,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
           ],
         ),

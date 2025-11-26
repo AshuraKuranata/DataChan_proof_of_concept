@@ -23,8 +23,9 @@ class ImageStorageService {
     return imagesDir;
   }
 
-  /// Save an image from the camera to local storage
-  /// Returns the path to the saved image, or null if save failed
+  // Save an image from the camera to local storage
+  // Returns the path to the saved image, or null if save failed
+  // Automatically deletes oldest images if storage limit would be exceeded
   static Future<String?> saveImage(String sourcePath) async {
     try {
       final sourceFile = File(sourcePath);
@@ -39,12 +40,22 @@ class ImageStorageService {
       final imagesDir = await getImagesDirectory();
 
       // Check current storage usage
-      final currentSize = await _getDirectorySize(imagesDir);
+      var currentSize = await _getDirectorySize(imagesDir);
       final fileSize = await sourceFile.length();
 
+      // For Developer Review:
+      // If adding the new file would exceed storage limit, delete oldest images
+      // until there's enough space for the new file
       if (currentSize + fileSize > maxStorageSizeBytes) {
-        debugPrint('Storage limit exceeded. Current: $currentSize, File: $fileSize, Max: $maxStorageSizeBytes');
-        return null;
+        debugPrint('Storage limit would be exceeded. Attempting to free space...');
+        await _deleteOldestImages(imagesDir, fileSize);
+        currentSize = await _getDirectorySize(imagesDir);
+
+        // Check again after deletion
+        if (currentSize + fileSize > maxStorageSizeBytes) {
+          debugPrint('Unable to free enough space. Current: $currentSize, File: $fileSize, Max: $maxStorageSizeBytes');
+          return null;
+        }
       }
 
       // Generate a unique filename with timestamp
@@ -123,7 +134,45 @@ class ImageStorageService {
     return maxStorageSizeBytes - used;
   }
 
-  /// Calculate the total size of a directory
+  // Delete oldest images until enough space is freed for the new file
+  // For Developer Review:
+  // - Gets all images sorted by modification time (oldest first)
+  // - Deletes images one by one until enough space is available
+  // - Stops when sufficient space is freed or all images are deleted
+  static Future<void> _deleteOldestImages(Directory dir, int requiredSpace) async {
+    try {
+      final files = dir.listSync();
+      final imageFiles = files
+          .whereType<File>()
+          .where((file) => _isImageFile(file.path))
+          .toList();
+
+      // Sort by modification time (oldest first)
+      imageFiles.sort((a, b) => a.statSync().modified.compareTo(b.statSync().modified));
+
+      int freedSpace = 0;
+      for (var file in imageFiles) {
+        if (freedSpace >= requiredSpace) {
+          break;
+        }
+
+        try {
+          final fileSize = await file.length();
+          await file.delete();
+          freedSpace += fileSize;
+          debugPrint('Deleted oldest image to free space: ${file.path}');
+        } catch (e) {
+          debugPrint('Error deleting image: $e');
+        }
+      }
+
+      debugPrint('Freed $freedSpace bytes of space');
+    } catch (e) {
+      debugPrint('Error deleting oldest images: $e');
+    }
+  }
+
+  // Calculate the total size of a directory
   static Future<int> _getDirectorySize(Directory dir) async {
     int size = 0;
 

@@ -33,17 +33,28 @@ class ScanDataStorageService {
 
   // Save a scan result to local storage
   // Returns true if save was successful, false otherwise
+  // Automatically deletes oldest scans if storage limit would be exceeded
   static Future<bool> saveScanResult(ScanData scanData) async {
     try {
       final scanFile = await _getScanDataFile();
 
       // Check current storage usage
-      final currentSize = await _getDirectorySize(await getScanDataDirectory());
+      var currentSize = await _getDirectorySize(await getScanDataDirectory());
       final newDataSize = jsonEncode(scanData.toJson()).length;
 
+      // For Developer Review:
+      // If adding the new scan would exceed storage limit, delete oldest scans
+      // until there's enough space for the new scan
       if (currentSize + newDataSize > maxStorageSizeBytes) {
-        debugPrint('Scan storage limit exceeded. Current: $currentSize, New: $newDataSize, Max: $maxStorageSizeBytes');
-        return false;
+        debugPrint('Scan storage limit would be exceeded. Attempting to free space...');
+        await _deleteOldestScans(newDataSize);
+        currentSize = await _getDirectorySize(await getScanDataDirectory());
+
+        // Check again after deletion
+        if (currentSize + newDataSize > maxStorageSizeBytes) {
+          debugPrint('Unable to free enough space. Current: $currentSize, New: $newDataSize, Max: $maxStorageSizeBytes');
+          return false;
+        }
       }
 
       // Load existing scans
@@ -111,6 +122,53 @@ class ScanDataStorageService {
     return maxStorageSizeBytes - used;
   }
 
+  // Delete oldest scans until enough space is freed for the new scan
+  // For Developer Review:
+  // - Gets all scans sorted by timestamp (oldest first)
+  // - Deletes scans one by one until enough space is available
+  // - Stops when sufficient space is freed or all scans are deleted
+  static Future<void> _deleteOldestScans(int requiredSpace) async {
+    try {
+      List<ScanData> scans = await getSavedScans();
+
+      // Sort by timestamp (oldest first)
+      scans.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+      int freedSpace = 0;
+      final scanFile = await _getScanDataFile();
+
+      for (var scan in scans) {
+        if (freedSpace >= requiredSpace) {
+          break;
+        }
+
+        try {
+          final scanSize = jsonEncode(scan.toJson()).length;
+          scans.remove(scan);
+          freedSpace += scanSize;
+          debugPrint('Deleted oldest scan to free space: ${scan.id}');
+        } catch (e) {
+          debugPrint('Error deleting scan: $e');
+        }
+      }
+
+      // Save remaining scans
+      if (scans.isNotEmpty) {
+        final jsonData = jsonEncode(scans.map((s) => s.toJson()).toList());
+        await scanFile.writeAsString(jsonData);
+      } else {
+        // Delete the file if no scans remain
+        if (await scanFile.exists()) {
+          await scanFile.delete();
+        }
+      }
+
+      debugPrint('Freed $freedSpace bytes of space');
+    } catch (e) {
+      debugPrint('Error deleting oldest scans: $e');
+    }
+  }
+
   // Calculate directory size recursively
   static Future<int> _getDirectorySize(Directory dir) async {
     int size = 0;
@@ -130,6 +188,12 @@ class ScanDataStorageService {
 }
 
 // Model for storing scan data
+// For Developer Review:
+// - Stores barcode/OCR scan results with store type and pricing information
+// - storeType: "Safeway/Albertsons" or "Costco" (determined by tag recognition)
+// - price: Total price of the product (if available)
+// - unitPrice: Price per unit (if available)
+// - productName: Name of the product extracted from OCR text (if available)
 class ScanData {
   final String id;
   final String imagePath;
@@ -137,6 +201,10 @@ class ScanData {
   final String ocrText;
   final DateTime timestamp;
   final String? notes;
+  final String? storeType; // "Safeway/Albertsons" or "Costco"
+  final double? price; // Total price
+  final double? unitPrice; // Price per unit
+  final String? productName; // Product name extracted from OCR
 
   ScanData({
     required this.id,
@@ -145,6 +213,10 @@ class ScanData {
     required this.ocrText,
     required this.timestamp,
     this.notes,
+    this.storeType,
+    this.price,
+    this.unitPrice,
+    this.productName,
   });
 
   // Convert to JSON for storage
@@ -156,6 +228,10 @@ class ScanData {
       'ocrText': ocrText,
       'timestamp': timestamp.toIso8601String(),
       'notes': notes,
+      'storeType': storeType,
+      'price': price,
+      'unitPrice': unitPrice,
+      'productName': productName,
     };
   }
 
@@ -168,10 +244,14 @@ class ScanData {
       ocrText: json['ocrText'] as String,
       timestamp: DateTime.parse(json['timestamp'] as String),
       notes: json['notes'] as String?,
+      storeType: json['storeType'] as String?,
+      price: json['price'] != null ? (json['price'] as num).toDouble() : null,
+      unitPrice: json['unitPrice'] != null ? (json['unitPrice'] as num).toDouble() : null,
+      productName: json['productName'] as String?,
     );
   }
 
   @override
-  String toString() => 'ScanData(id: $id, barcodes: ${barcodes.length}, timestamp: $timestamp)';
+  String toString() => 'ScanData(id: $id, product: $productName, barcodes: ${barcodes.length}, storeType: $storeType, timestamp: $timestamp)';
 }
 
