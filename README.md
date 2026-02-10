@@ -20,6 +20,16 @@ Utilization of Augment Code AI for assistance in build development.
 	- The application shall store data that will not exceed 25mb	
 	- The application shall overwrite the oldest lines of data as storage file approaches 25mb	
 
+## Roadmap
+* Implement ML for scanning and identifying stores based on ML model
+* Implement ML to break down image recognition into sections to pull text from tag sections
+* Ensure data extraction is functioning
+* Create database framework for data storage
+* Implement database
+* Connect application to backend API for data submission (RESTful APIs / CRUD)
+* Test application
+* Deploy proof of concept
+
 ## 11/6/2025
 Feature updates:
 
